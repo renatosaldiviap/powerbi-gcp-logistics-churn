@@ -1,0 +1,11 @@
+﻿client_id,company_name,tier_level,signup_date,is_active
+CLI-101,Apex Retail Solutions,Enterprise,2024-01-15,TRUE
+CLI-102,LogiTech Express,Mid-Market,2024-02-01,TRUE
+CLI-103,Andes Delivery Group,SMB,2024-02-20,FALSE
+CLI-104,Patagonia Cargo SpA,Enterprise,2024-03-10,TRUE
+CLI-105,Pacific Trade Co,Mid-Market,2024-03-22,FALSE
+CLI-106,Southern Freight Inc,SMB,2024-04-05,TRUE
+CLI-107,TransLatam Logistics,Enterprise,2024-05-12,TRUE
+CLI-108,Valparaiso Imports,Mid-Market,2024-06-01,FALSE
+CLI-109,Santiago Express Ltd,SMB,2024-06-18,TRUE
+CLI-110,BioBio Commerce,Mid-Market,2024-07-02,TRUE
