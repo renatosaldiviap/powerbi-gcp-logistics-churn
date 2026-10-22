@@ -1,4 +1,4 @@
-# 🚚 Apex Logistics | Operational SLA & Churn Analytics (GCP + Power BI)
+# 🚚 Apex Logistics | Operational Risk & Churn Analytics (GCP + Power BI)
 
 ![Power BI](https://img.shields.io/badge/Power_BI-F2C811?style=for-the-badge&logo=powerbi&logoColor=black)
 ![Google Cloud Platform](https://img.shields.io/badge/Google_Cloud-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white)
@@ -6,91 +6,91 @@
 ![SQL](https://img.shields.io/badge/SQL-003B57?style=for-the-badge&logo=postgresql&logoColor=white)
 ![DAX](https://img.shields.io/badge/DAX-Yellow?style=for-the-badge)
 
-## 📌 Executive Summary
+## 📌 Project Overview
 
-Este proyecto implementa una solución analítica **End-to-End** orientada a cuantificar el impacto financiero de las fallas operativas de entregas en la tasa de cancelación de clientes (**Churn**) y el Ingreso Mensual Recurrente (**MRR**).
+This project builds an end-to-end analytics pipeline designed to measure how delivery delays impact customer churn and Monthly Recurring Revenue (MRR) loss at Apex Logistics.
 
-Mediante la integración de **Google Cloud Storage (GCS)**, **BigQuery** y **Power BI**, se diseñó una arquitectura desacoplada y un modelo en estrella (Star Schema) basado en metodología **Kimball**, permitiendo aislar retrasos críticos de transporte y correlacionarlos con pérdidas de cuentas corporativas.
+Using **Google Cloud Storage (GCS)**, **BigQuery**, and **Power BI**, raw operational and financial data were transformed into a clean Kimball star schema to identify delay thresholds that lead to account cancellations.
+
+---
+
+## 🖼️ Dashboard Preview
+
+![Dashboard Preview](docs/dashboard_preview.png)
 
 ---
 
 ## 🛠️ Tech Stack & Architecture
 
-- **Cloud Storage (GCS):** Data lake de capas staging para almacenamiento bruto de logs de despachos y facturación.
-- **Google BigQuery:** Data Warehouse para transformación, limpieza (DDL/DML) y creación de modelo dimensional (Dimensiones y Hechos) + Vistas analíticas.
-- **Power BI Desktop:** Modelamiento estrella (1:*), desarrollo de lógica de negocio en **DAX** y maquetación UI/UX con enfoque "Card UI" para toma de decisiones ejecutivas.
-- **Storage Mode:** `Import` con estrategia de actualización programada (Cost & Performance Optimization).
+- **Google Cloud Storage (GCS):** Staging layer for raw shipment logs, billing, and customer data.
+- **Google BigQuery:** Data warehouse layer used for SQL transformations, dimensional modeling (Star Schema), and analytical views.
+- **Power BI:** Data modeling, DAX measures development, and interactive dashboard design for operational decision-making.
 
-[ CSV Raw Data ]
-│
-▼
-[ Google Cloud Storage ] (Bucket Staging)
-│
-▼
-[ Google BigQuery ]   ──► SQL DDL/DML Transformations
-──► Dim & Fact Tables (Kimball)
-──► Analytical Views (vw_analisis_churn)
-│
-▼  (Import Mode)
-[ Power BI ]         ──► Star Schema Relationships
-──► DAX Measures (_medidas)
-──► Executive UI/UX Dashboard
+```text
+[ CSV Files ] ──► [ Google Cloud Storage ] ──► [ BigQuery SQL ] ──► [ Power BI Star Schema ]
+```
 
----
+📊 Data Model (Star Schema)
+The dataset is structured following Kimball's dimensional modeling methodology to separate business entities cleanly:
 
-## 📊 Data Model & Architecture (Star Schema)
+- dim_customers: Master data containing accounts, tier levels, regions, and active status.
+- fact_shipments: Operational delivery events, route tracking, and delay metrics (delay_minutes).
+- fact_billing: Financial records containing recurring contract values (monto_mrr).
+- vw_analisis_churn: Consolidated analytical view built in BigQuery aggregating operations and financial metrics per customer.
 
-El modelo de datos se diseñó bajo las mejores prácticas de **Kimball**, separando procesos de negocio con distinta granularidad para evitar duplicación no deseada (*fan-out*):
+📐 Core DAX Measures
+Business logic and KPIs were centralized in a dedicated _medidas table within Power BI:
 
-- **`dim_clientes` (Dimensión):** Almacena el máster de cuentas, segmento (`tier_level`), zona geográfica y estado actual (`is_active`).
-- **`fact_envios` (Hecho Operacional):** Registra eventos de transporte, identificadores de ruta, zonas y minutos de retraso (`tiempo_retraso_min`).
-- **`fact_facturacion` (Hecho Financiero):** Registra transacciones de cobro y contratos recurrentes (`monto_mrr`).
-- **`vw_analisis_churn` (Vista BigQuery):** Agregación consolidada a nivel de cliente para auditorías de alto nivel.
+- Churn Rate:
+```dax
+Tasa_Churn = 
+DIVIDE(
+    CALCULATE(COUNTROWS('dim_clientes'), 'dim_clientes'[is_active] = FALSE),
+    COUNTROWS('dim_clientes'),
+    0
+)
+```
 
----
+- MRR at Risk:
+```dax
+MRR_En_Riesgo = 
+CALCULATE(
+    SUM('fact_facturacion'[monto_mrr]),
+    'dim_clientes'[is_active] = FALSE
+)
+```
 
-## 📐 Core DAX Measures
+- Average Delay (Minutes):
+```dax
+Avg_Retraso_Minutos = AVERAGE('fact_envios'[tiempo_retraso_min])
+```
 
-Se estructuró una tabla vacía dedicada (`_medidas`) para albergar la lógica de negocio central:
-
-- **Tasa de Churn (`Tasa_Churn`):**
-  ```dax
-  Tasa_Churn = 
-  DIVIDE(
-      CALCULATE(COUNTROWS('dim_clientes'), 'dim_clientes'[is_active] = FALSE),
-      COUNTROWS('dim_clientes'),
-      0
-  )
-
-- MRR en Riesgo / Perdido (MRR_En_Riesgo):
-
-    Fragmento de código
-    MRR_En_Riesgo = 
-    CALCULATE(
-        SUM('fact_facturacion'[monto_mrr]),
-        'dim_clientes'[is_active] = FALSE
-    )
-
-- Promedio de Retraso (Avg_Retraso_Minutos):
-
-    Fragmento de código
-    Avg_Retraso_Minutos = AVERAGE('fact_envios'[tiempo_retraso_min])
-
-- Envíos Críticos (Envios_Criticos_Total):
-
-    Fragmento de código
-    Envios_Criticos_Total = 
-    CALCULATE(
-        COUNTROWS('fact_envios'),
-        'fact_envios'[tiempo_retraso_min] > 45
-    )
+- Critical Shipments (>45 min delay):
+```dax
+Envios_Criticos_Total = 
+CALCULATE(
+    COUNTROWS('fact_envios'),
+    'fact_envios'[tiempo_retraso_min] > 45
+)
+```
 
 💡 Key Business Insights
-1. Umbral Crítico de Tolerancia: Los clientes que registraron un promedio de retraso superior a 45 minutos presentaron una tasa de cancelación (Churn) del 100%.
-2. Impacto Financiero Directo: El incumplimiento de SLA de transporte afectó de forma desproporcionada las cuentas Enterprise, representando el mayor porcentaje del MRR en Riesgo.
-3. Foco Geográfico: La zona Centro concentró las mayores demoras operativas, convirtiéndose en el área prioritaria para renegociación de contratos logísticos.
+1. Critical Delay Threshold: Customers experiencing average delays over 45 minutes showed a 100% cancellation (churn) rate.
+2. Enterprise Impact: Operational breaches disproportionately affected Enterprise accounts, driving the majority of lost MRR.
+3. Regional Bottlenecks: The Central region accounted for the highest concentration of delays, flagging it as a priority for logistics rerouting.
 
-🖼️ Dashboard Preview
-
-![alt text](image.png)
+📁 Repository Structure
+```text
+├── sql/
+│   ├── 01_create_tables.sql
+│   └── 02_vw_analisis_churn.sql
+├── data/
+│   ├── customers.csv
+│   ├── shipments.csv
+│   └── billing.csv
+├── docs/
+│   └── dashboard_preview.png
+├── apex_logistics_dashboard.pbix
+└── README.md
+```
 
