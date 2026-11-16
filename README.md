@@ -12,13 +12,9 @@ This project builds an end-to-end analytics pipeline designed to measure how del
 
 Using **Google Cloud Storage (GCS)**, **BigQuery**, and **Power BI**, raw operational and financial data were transformed into a clean Kimball star schema to identify delay thresholds that lead to account cancellations.
 
----
-
 ## 🖼️ Dashboard Preview
 
 ![Dashboard Preview](docs/dashboard_preview.png)
-
----
 
 ## 🛠️ Tech Stack & Architecture
 
@@ -30,7 +26,7 @@ Using **Google Cloud Storage (GCS)**, **BigQuery**, and **Power BI**, raw operat
 [ CSV Files ] ──► [ Google Cloud Storage ] ──► [ BigQuery SQL ] ──► [ Power BI Star Schema ]
 ```
 
-📊 Data Model (Star Schema)
+## 📊 Data Model (Star Schema)
 The dataset is structured following Kimball's dimensional modeling methodology to separate business entities cleanly:
 
 - dim_customers: Master data containing accounts, tier levels, regions, and active status.
@@ -38,7 +34,7 @@ The dataset is structured following Kimball's dimensional modeling methodology t
 - fact_billing: Financial records containing recurring contract values (monto_mrr).
 - vw_analisis_churn: Consolidated analytical view built in BigQuery aggregating operations and financial metrics per customer.
 
-📐 Core DAX Measures
+## 📐 Core DAX Measures
 Business logic and KPIs were centralized in a dedicated _medidas table within Power BI:
 
 - Churn Rate:
@@ -74,12 +70,12 @@ CALCULATE(
 )
 ```
 
-💡 Key Business Insights
+## 💡 Key Business Insights
 1. Critical Delay Threshold: Customers experiencing average delays over 45 minutes showed a 100% cancellation (churn) rate.
 2. Enterprise Impact: Operational breaches disproportionately affected Enterprise accounts, driving the majority of lost MRR.
 3. Regional Bottlenecks: The Central region accounted for the highest concentration of delays, flagging it as a priority for logistics rerouting.
 
-📁 Repository Structure
+## 📁 Repository Structure
 ```text
 ├── sql/
 │   ├── 01_create_tables.sql
